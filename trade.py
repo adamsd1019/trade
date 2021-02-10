@@ -38,28 +38,23 @@ def get_options(ticker, key):
                     params={'apikey': key})
     options_data = json.loads(page.content)
 
+    result = []
     for date, value in options_data['callExpDateMap'].items():
+        inTM = 0
+        ninTM = 0
         date_array = date.split(":")
         if int(date_array[1]) <= 30:
-            for key,data in value.items():
-                print(key)
-            exit()
-    exit()
+            for key, data in value.items():
+                for d in data:
+                    if 'CALL' == d['putCall']:
+                        if d['inTheMoney'] is True and inTM != 3:
+                            result.append(d)
+                            inTM += 1
+                        elif d['inTheMoney'] is False and ninTM != 3:
+                            result.append(d)
+                            ninTM += 1
 
-    for k,v in options_data.items():
-        if k == 'daysToExpiration' and v <= 30:
-            if k == 'inTheMoney' and v == True:
-                continue
-
-
-        '''
-            if data['inTheMoney'] == True and d['putCall'] == 'CALL' and d['daysToExpiration'] <= 30:
-                print(d['description'] + '/t' + d['last'])
-        '''
-
-    exit()
-
-    return options_data
+    return result
 
 
 def main():
@@ -72,9 +67,9 @@ def main():
     key = config['key']
 
     if args.ticker and args.options == True:
-        options_data = get_options(args.ticker, key)
-        for k,v in options_data:
-            print(k,v)
+        options = get_options(args.ticker, key)
+        for option in options:
+            print(option)
     elif args.ticker:
         ticker_data = get_data(args.ticker, key)
         for k,v in ticker_data:
