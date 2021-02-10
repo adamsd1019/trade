@@ -35,8 +35,12 @@ def get_options(ticker, key):
     page = requests.get(url=full_url,
                     params={'apikey': key})
     options_data = json.loads(page.content)
-
+    print(options_data['callExpDateMap'].keys())
+    exit()
+    
     for data in options_data['callExpDateMap']:
+        print(data)
+        exit()
         for d in data:
             print(d)
             exit()
