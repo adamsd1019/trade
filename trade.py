@@ -1,16 +1,25 @@
 '''
     Program to collect data and place trades
+
+    To-Do List:
+        aggregate data from last 60 minutes of running get_data to make hourly candle
+            use first get_data openPrice and last get_data closePrice
+
+    Strategy:
+        Need to use stock data to trade one stock
+        base trades on 200ema crosses on the hourly chart
 '''
 import requests
 import json
 import argparse
+from time import localtime, strftime
 
 
 def _argparse():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,description='Process arguments')
-    parser.add_argument('--ticker', type=str, help='Specific ticker to use')
-    parser.add_argument('-o','--options', action='store_true',help='Toggle for options chain')
-    # parser.add_argument('--strike', help='List strikes as comma delimited')
+    parser.add_argument('-t', '--ticker', type=str, help='Specific ticker to use')
+    parser.add_argument('-o','--options', action='store_true', help='Toggle for options chain')
+    parser.add_argument('--hourly', action='store_true', help='Get hourly candle data')
 
     args = parser.parse_args()
     return args
@@ -19,6 +28,7 @@ def _argparse():
 def get_data(ticker, key):
     # Collect stock data from tdapi from a specific ticker
     # ticker_data returns as a dictionary
+    # returns last one minute candle data
     stock_endpoint = 'https://api.tdameritrade.com/v1/marketdata/{stock_ticker}/quotes?'
     full_url = stock_endpoint.format(stock_ticker=ticker)
     page = requests.get(url=full_url,
@@ -27,6 +37,41 @@ def get_data(ticker, key):
     ticker_data = content[ticker].items()
 
     return ticker_data
+
+
+def get_candles(ticker, key):
+    historical_endpoint = 'https://api.tdameritrade.com/v1/marketdata/{stock_ticker}/pricehistory?periodType={periodType}&period={period}&frequencyType={frequencyType}&frequency={frequency}'
+    full_url = historical_endpoint.format(stock_ticker=ticker,
+                                            periodType='day',
+                                            period=1,
+                                            frequencyType='minute',
+                                            frequency=30)
+    page = requests.get(url=full_url, params={'apikey': key})
+    content = json.loads(page.content)
+    data = content['candles']
+    for d in data:
+        epoch = d['datetime']
+        date = localtime(epoch/1000)
+        print(strftime('%m/%d/%Y %H:%M', date))
+        print('open=' + str(d['open']))
+        print('close=' + str(d['close']))
+        
+
+    exit()  
+    candle_open = data[-2]['open']
+    candle_close = data[-1]['close']
+    print(candle_open)
+    print(candle_close)
+    exit()  
+    candle = []
+    candle_open = minute1['open']
+    candle_close = minute60['close']
+
+    print()
+
+    exit()
+
+    return hourly_data
 
 
 def get_options(ticker, key):
@@ -69,7 +114,14 @@ def main():
     if args.ticker and args.options == True:
         options = get_options(args.ticker, key)
         for option in options:
-            print(option)
+            print("description: " + option['description'] + "\tbid: " + str(option['bid']) + "\task: " + str(option['ask']))
+            # print(option.keys())
+    elif args.ticker and args.hourly == True:
+        hourly_data = get_candles(args.ticker, key)
+        for data in hourly_data:
+            print('open = ' + data['openPrice'])
+            print('close = ' + data['closePrice'])
+            exit()
     elif args.ticker:
         ticker_data = get_data(args.ticker, key)
         for k,v in ticker_data:
