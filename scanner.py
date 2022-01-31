@@ -22,7 +22,7 @@ def timestamp():
     today = datetime.today()
     return today.replace(tzinfo=timezone.utc).timestamp() * 1000
 
-def get_data(ticker, key, data_file):
+def get_data(ticker, key):
     # saves one minute candle data for the last 5 days to json file
     # content returns as a dictionary
     epoch = int(timestamp())
@@ -38,11 +38,11 @@ def get_data(ticker, key, data_file):
 def main():
     args = _argparse()
     config_file = 'config.json'
-    data_file = 'stock_data.json'
+    # data_file = 'stock_data.json'
     key = readConfig(config_file)
 
     if args.ticker:
-        get_data(args.ticker, key, data_file)
+        get_data(args.ticker, key)
     elif args.watchlist:
         with open('watchlist.txt', 'r') as file:
             watchlist = file.readlines()
@@ -51,7 +51,7 @@ def main():
             for ticker in watchlist:
                 new_watchlist.append(ticker.strip())
             print(get_data(str(new_watchlist).replace('[', '').replace(']', '').replace("'", '').replace(' ', ''), key))
-            
+
     exit()
 
 if __name__ == '__main__':
