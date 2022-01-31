@@ -1,6 +1,7 @@
 import json
 import argparse
 import requests
+from datetime import datetime, timezone
 
 def _argparse():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -17,32 +18,40 @@ def readConfig(filepath):
     config = json.loads(data)
     return config['key']
 
-def get_data(ticker, key):
-    # Collect stock data from tdapi from a specific ticker
-    # ticker_data returns as a dictionary
-    # returns last one minute candle data
+def timestamp():
+    today = datetime.today()
+    return today.replace(tzinfo=timezone.utc).timestamp() * 1000
+
+def get_data(ticker, key, data_file):
+    # saves one minute candle data for the last 5 days to json file
+    # content returns as a dictionary
+    epoch = int(timestamp())
     if ',' in ticker:
         stock_endpoint = 'https://api.tdameritrade.com/v1/marketdata/quotes?symbol=' + ticker
     else:
-        stock_endpoint = f'https://api.tdameritrade.com/v1/marketdata/{ticker}/quotes?'
+        # stock_endpoint = f'https://api.tdameritrade.com/v1/marketdata/{ticker}/quotes?'
+        stock_endpoint = f'https://api.tdameritrade.com/v1/marketdata/{ticker}/pricehistory?periodType=day&period=5&frequencyType=minute&frequency=1&endDate={epoch}'
     page = requests.get(url=stock_endpoint,
                         params={'apikey': key})
-    content = json.loads(page.content)
-    return content
+    return json.loads(page.content)
 
 def main():
     args = _argparse()
-    filepath = 'config.json'
-    key = readConfig(filepath)
+    config_file = 'config.json'
+    data_file = 'stock_data.json'
+    key = readConfig(config_file)
+
     if args.ticker:
-        print(get_data(args.ticker, key))
+        get_data(args.ticker, key, data_file)
     elif args.watchlist:
         with open('watchlist.txt', 'r') as file:
             watchlist = file.readlines()
+        for ticker in watchlist:
             new_watchlist = []
             for ticker in watchlist:
                 new_watchlist.append(ticker.strip())
             print(get_data(str(new_watchlist).replace('[', '').replace(']', '').replace("'", '').replace(' ', ''), key))
+            
     exit()
 
 if __name__ == '__main__':
