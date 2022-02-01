@@ -9,6 +9,7 @@ def _argparse():
     parser.add_argument('-t', '--ticker', default=False, help='Specific ticker to use')
     parser.add_argument('-o','--options', action='store_true', help='Toggle for options chain')
     parser.add_argument('-wl', '--watchlist', action='store_true', help='Check tickers on watchlist')
+    parser.add_argument('-m', '--movers', action='store_true', help='Check index movers')
     args = parser.parse_args()
     return args
 
@@ -35,6 +36,19 @@ def get_data(ticker, key):
                         params={'apikey': key})
     return json.loads(page.content)
 
+def moversByIndex(key):
+    # gets data on what's moving based on index
+    indexes = ['DJI', 'COMPX', 'SPX.X']
+    contents = []
+    for index in indexes:
+        stock_endpoint = f'https://api.tdameritrade.com/v1/marketdata/${index}/movers'
+        page = requests.get(url=stock_endpoint,
+                    params={'apikey': key,
+                            'direction': 'up',
+                            'change': 'percent'})
+        contents.append(json.loads(page.content))
+    return contents
+
 def main():
     args = _argparse()
     config_file = 'config.json'
@@ -42,7 +56,10 @@ def main():
     key = readConfig(config_file)
 
     if args.ticker:
-        get_data(args.ticker, key)
+        print(get_data(args.ticker, key))
+    elif args.movers:
+        for content in moversByIndex(key):
+            print(content)
     elif args.watchlist:
         with open('watchlist.txt', 'r') as file:
             watchlist = file.readlines()
